@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.py
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.log
+*.tmp
+
+# Deploy artifacts
+.vercel/

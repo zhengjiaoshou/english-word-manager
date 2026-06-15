@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📖 英语单词管家</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 背景装饰 -->
+    <div class="bg-decoration">
+        <div class="bg-circle bg-circle-1"></div>
+        <div class="bg-circle bg-circle-2"></div>
+        <div class="bg-circle bg-circle-3"></div>
+    </div>
+
+    <!-- 顶部导航 -->
+    <header class="glass-header">
+        <div class="header-inner">
+            <div class="logo">
+                <span class="logo-icon">📖</span>
+                <h1>英语单词管家</h1>
+            </div>
+            <nav class="nav-links">
+                <button class="nav-btn active" data-page="home">🏠 首页</button>
+                <button class="nav-btn" data-page="wordbook">📚 词库</button>
+            </nav>
+            <div class="header-actions">
+                <span class="word-count-badge" id="wordCountBadge">0 词</span>
+                <button class="theme-toggle" id="themeToggle" title="切换暗色模式">🌙</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主容器 -->
+    <main class="container">
+        <!-- ====== 首页 ====== -->
+        <section id="page-home" class="page active">
+            <!-- 查词面板 -->
+            <div class="glass-card search-panel" id="searchPanel">
+                <div class="search-input-group">
+                    <input type="text" id="searchInput" 
+                           placeholder="输入英语单词查询..." 
+                           autocomplete="off" spellcheck="false"
+                           autofocus>
+                    <button class="btn-search" id="btnSearch">🔍 查询</button>
+                </div>
+                <div id="searchResult" class="search-result"></div>
+            </div>
+
+            <!-- 今日单词 -->
+            <section class="daily-section">
+                <div class="section-header">
+                    <h2>📅 今日单词 <span class="date-tag" id="todayDate"></span></h2>
+                </div>
+                <div class="word-chips" id="todayChips">
+                    <div class="empty-state">今天还没有添加单词哦，试试在上方查询吧 ✨</div>
+                </div>
+            </section>
+
+            <!-- 最近添加 -->
+            <section class="recent-section">
+                <div class="section-header">
+                    <h2>📚 最近添加</h2>
+                    <a href="#" class="view-all" id="viewAllLink">查看全部 →</a>
+                </div>
+                <div class="word-list" id="recentList">
+                    <div class="empty-state">还没有单词记录，开始你的第一个单词吧 🚀</div>
+                </div>
+            </section>
+        </section>
+
+        <!-- ====== 词库页 ====== -->
+        <section id="page-wordbook" class="page">
+            <div class="glass-card wordbook-header">
+                <div class="wordbook-title">
+                    <h2>📚 我的词库</h2>
+                    <span class="word-count" id="wordbookCount">共 0 词</span>
+                </div>
+                <div class="wordbook-toolbar">
+                    <div class="search-input-group search-sm">
+                        <input type="text" id="wordbookSearch" 
+                               placeholder="搜索单词..." 
+                               autocomplete="off">
+                    </div>
+                    <div class="toolbar-actions">
+                        <button class="btn-outline" id="btnExportJson">⬇ 导出 JSON</button>
+                        <button class="btn-outline" id="btnExportMd">📝 导出 MD</button>
+                        <button class="btn-outline btn-import" id="btnImportJson">📂 导入</button>
+                    </div>
+                </div>
+                <input type="file" id="importFileInput" accept=".json" style="display:none">
+            </div>
+
+            <div class="glass-card wordbook-table-wrap">
+                <div class="wordbook-table" id="wordbookTable">
+                    <div class="empty-state">词库空空如也，先去添加一些单词吧 📝</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 单词详情弹窗 -->
+    <div class="modal-overlay" id="wordDetailModal">
+        <div class="modal-glass" id="wordDetailContent">
+            <button class="modal-close" id="modalClose">✕</button>
+            <div class="modal-body" id="modalBody">
+                <!-- 由 JS 动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/db.js"></script>
+    <script src="js/dictionary.js"></script>
+    <script src="js/tts.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
