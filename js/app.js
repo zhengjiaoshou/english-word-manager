@@ -5,6 +5,7 @@
 const app = {
     // ---- 当前搜索数据（用于添加） ----
     _lastSearchData: null,
+    searchMode: 'en-en',  // 'en-en' | 'cn-en'
 
     // ---- 初始化 ----
     async init() {
@@ -33,6 +34,12 @@ const app = {
         // 搜索框回车
         document.getElementById('searchInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') this.handleSearch();
+        });
+
+        // 搜索模式切换
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+            tab.addEventListener('click', () => this.switchSearchMode(tab.dataset.mode));
+        });
         });
 
         // 词库搜索
@@ -92,6 +99,23 @@ const app = {
         }
     },
 
+    // ---- 搜索模式切换 ----
+    switchSearchMode(mode) {
+        this.searchMode = mode;
+        const input = document.getElementById('searchInput');
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.mode-tab[data-mode="${mode}"]`)?.classList.add('active');
+
+        if (mode === 'cn-en') {
+            input.placeholder = '输入中文查找英文单词...';
+        } else {
+            input.placeholder = '输入英语单词查询...';
+        }
+        input.value = '';
+        input.focus();
+        hideSearchResult(document.getElementById('searchResult'));
+    },
+
     // ---- 搜索 ----
     async handleSearch() {
         const input = document.getElementById('searchInput');
@@ -102,6 +126,29 @@ const app = {
 
         renderSearchLoading(result);
 
+        // 中→英模式
+        if (this.searchMode === 'cn-en') {
+            try {
+                const transResult = await searchChineseToEnglish(word);
+                if (!transResult || !transResult.dictionary) {
+                    renderSearchError(result, '未找到对应英文单词');
+                    this._lastSearchData = null;
+                    return;
+                }
+                this._lastSearchData = transResult.dictionary;
+                renderTranslationResult(transResult, result);
+            } catch (err) {
+                if (err.message === 'TRANSLATE_NOT_CONFIGURED') {
+                    renderSearchError(result, '⚠️ 翻译功能尚未配置<br><small>请到 <a href="https://ai.youdao.com" target="_blank" style="color:var(--accent)">有道智云</a> 注册获取 API Key，<br>然后在 js/translate.js 中填入 APP_KEY 和 APP_SECRET。</small>');
+                } else {
+                    renderSearchError(result, '翻译服务暂不可用，请稍后重试');
+                }
+                this._lastSearchData = null;
+            }
+            return;
+        }
+
+        // 英→英模式
         try {
             const data = await lookupWord(word);
 
@@ -115,7 +162,7 @@ const app = {
             renderSearchResult(data, result);
         } catch (err) {
             if (err.message === 'NETWORK_ERROR') {
-                renderSearchError(result, '⚠️ 网络请求被阻塞<br><small>直接用浏览器打开 HTML 文件会受到 CORS 限制。请双击 <code style="background:rgba(0,0,0,0.1);padding:2px 6px;border-radius:3px">start-server.bat</code> 启动本地服务器后再试。</small>');
+                renderSearchError(result, '⚠️ 网络请求被阻塞<br><small>请用 HTTP 服务器打开此文件（参考 start-server.bat）。</small>');
             } else {
                 renderSearchError(result, '查询出错，请稍后重试');
             }
@@ -191,6 +238,56 @@ const app = {
         }
     },
 
+    // ---- 周报 ----
+    _weeklyWords: [],
+    _weeklyInfo: null,
+
+    async showWeeklyReport() {
+        await renderWeeklyReport();
+    },
+
+    async copyWeeklyMarkdown() {
+        const words = this._weeklyWords || [];
+        const info = this._weeklyInfo || {};
+        let md = `# 📚 英语单词周报\n\n`;
+        md += `> **周次**: ${info.weekNum}周 | **周期**: ${info.startStr} — ${info.endStr}\n`;
+        md += `> **单词总数**: ${info.total} | **日均**: ${info.avg}\n\n---\n\n`;
+        md += `| # | 单词 | 音标 | 释义 |\n|---|---|---|---|\n`;
+        words.forEach((w, i) => {
+            const def = w.definitions?.[0]?.substring(0, 30) || '';
+            md += `| ${i + 1} | ${w.word} | ${w.phoneticUs || '—'} | ${def} |\n`;
+        });
+        md += `\n---\n\n*自动生成于 ${new Date().toLocaleDateString('zh-CN')}*`;
+
+        try {
+            await navigator.clipboard.writeText(md);
+            showToast('📋 已复制周报 Markdown', 'success');
+        } catch (e) {
+            this.downloadFile(md, `weekly-${info.weekNum}.md`, 'text/markdown');
+            showToast('📝 已下载周报文件', 'success');
+        }
+    },
+
+    downloadWeeklyJSON() {
+        const words = this._weeklyWords || [];
+        const info = this._weeklyInfo || {};
+        const data = {
+            weekNum: info.weekNum,
+            dateRange: `${info.startStr} — ${info.endStr}`,
+            total: info.total,
+            words: words.map(w => ({
+                word: w.word,
+                phoneticUs: w.phoneticUs,
+                phoneticUk: w.phoneticUk,
+                definitions: w.definitions,
+                addedAt: w.addedAt?.split('T')[0]
+            }))
+        };
+        this.downloadFile(JSON.stringify(data, null, 2),
+            `weekly-words-${info.weekNum}.json`, 'application/json');
+        showToast('📥 已导出周报 JSON', 'success');
+    },
+
     // ---- 关闭弹窗 ----
     closeModal() {
         document.getElementById('wordDetailModal').classList.remove('show');
@@ -206,6 +303,7 @@ const app = {
             renderRecentList(allWords, document.getElementById('recentList'));
 
             await updateWordCountBadge();
+            await updateWeeklyBanner();
         } catch (err) {
             console.error('刷新UI失败:', err);
         }
